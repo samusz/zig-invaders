@@ -133,13 +133,22 @@ const Bullet = struct {
             );
         }
     }
+
+    pub fn getRect(self: @This()) Rectangle {
+        return .{
+            .x = self.position_x,
+            .y = self.position_y,
+            .width = self.width,
+            .height = self.height,
+        };
+    }
 };
 
 const Invader = struct {
     position_x: f32,
     position_y: f32,
     width: f32,
-    heigth: f32,
+    height: f32,
     speed: f32,
     alive: bool,
 
@@ -148,7 +157,7 @@ const Invader = struct {
             .position_x = position_x,
             .position_y = position_y,
             .width = width,
-            .heigth = height,
+            .height = height,
             .speed = 5.0,
             .alive = true,
         };
@@ -165,10 +174,19 @@ const Invader = struct {
                 @intFromFloat(self.position_x),
                 @intFromFloat(self.position_y),
                 @intFromFloat(self.width),
-                @intFromFloat(self.heigth),
+                @intFromFloat(self.height),
                 rl.Color.green,
             );
         }
+    }
+
+    pub fn getRect(self: @This()) Rectangle {
+        return .{
+            .x = self.position_x,
+            .y = self.position_y,
+            .width = self.width,
+            .height = self.height,
+        };
     }
 };
 
@@ -193,6 +211,7 @@ pub fn main() !void {
     const invaderDropDistance = 30.0;
     var invader_direction: f32 = 1.0;
     var move_timer: i32 = 0;
+    var score: i32 = 0;
 
     // Game initialisation
     rl.initWindow(screenWidth, screenHeight, "Zig Invaders");
@@ -243,6 +262,24 @@ pub fn main() !void {
             bullet.update();
         }
 
+        // colisions
+        for (&bullets) |*bullet| {
+            if (bullet.active) {
+                for (&invaders) |*row| {
+                    for (row) |*invader| {
+                        if (invader.alive) {
+                            if (bullet.getRect().intersect(invader.getRect())) {
+                                bullet.active = false;
+                                invader.alive = false;
+                                score += 10;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            bullet.update();
+        }
         move_timer += 1;
         if (move_timer >= invaderMoveDelay) {
             move_timer = 0;
@@ -290,7 +327,11 @@ pub fn main() !void {
                 invader.draw();
             }
         }
-        rl.drawText("Zig Invaders", 300, 200, 64, rl.Color.green);
+        const score_text = rl.textFormat("Score: %d", .{score});
+
+        rl.drawText(score_text, 20, screenHeight - 20, 20, rl.Color.white);
+        //rl.drawText("Zig Invaders", 300, 200, 64, rl.Color.green);
+        rl.drawText("Esc to quit, Space to shoot", 20, 20, 20, rl.Color.white);
     }
 
     return;
